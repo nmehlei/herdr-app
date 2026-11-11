@@ -1,0 +1,50 @@
+name: nme-intel
+run-name: nme-intel ${{ github.ref_name }}
+
+# nmehlei fork only: builds the macOS Intel (x86_64) app that upstream does not ship.
+# Upstream's own ci.yml / release.yml need signing and R2 secrets this fork does not have.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or SHA to build (default: this ref)
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+env:
+  RUST_TOOLCHAIN: 1.95.0
+  ZIG_VERSION: 0.16.0
+
+jobs:
+  build:
+    runs-on: macos-15-intel
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          submodules: true
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        with:
+          version: ${{ env.ZIG_VERSION }}
+      - name: Build and pack (ad hoc signed)
+        run: scripts/package
+      - name: Show the result
+        run: |
+          uname -m
+          ls -la dist
+          tar -tzf dist/herdr-app-macos-x86_64.tar.gz | head
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: herdr-app-macos-x86_64
+          path: dist/herdr-app-macos-x86_64.tar.gz
+          if-no-files-found: error
+          retention-days: 14

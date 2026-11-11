@@ -41,10 +41,7 @@ case "$arch" in
   arm64 | aarch64) arch=aarch64 ;;
   *) echo "package: unsupported CPU $arch" >&2; exit 1 ;;
 esac
-if [[ $os == macos && $arch != aarch64 ]]; then
-  echo "package: Intel Macs aren't supported; build from source instead." >&2
-  exit 1
-fi
+# nmehlei fork: Intel Macs are built here (see .github/workflows/nme-intel.yml); upstream refuses them.
 target="$os-$arch"
 
 sha256() { if command -v sha256sum >/dev/null; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi; }
